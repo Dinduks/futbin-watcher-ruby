@@ -15,38 +15,63 @@ def commas(number)
 end
 
 players = {
-  "Ronaldo  " => "http://www.futpc.com/player/3072/cristiano-ronaldo",
-  "Messi    " => "http://www.futpc.com/player/3071/lionel-messi",
-  "Robben   " => "http://www.futpc.com/player/3074/arjen-robben",
-  #"Suarez   " => "http://www.futpc.com/player/3075/luis-su%C3%A1rez",
-  #"Neymar   " => "http://www.futpc.com/player/3091/neymar",
-  "Modric   " => "http://www.futpc.com/player/3083/luka-modric",
-  "Iniesta  " => "http://www.futpc.com/player/3076/iniesta",
-  "Lahm     " => "http://www.futpc.com/player/3088/philipp-lahm",
-  "Alba     " => "http://www.futpc.com/player/3209/jordi-alba",
-  "Ramos    " => "http://www.futpc.com/player/3086/sergio-ramos",
-  "Piszczek " => "http://www.futpc.com/player/3171/lukasz-piszczek",
-  "Neuer    " => "http://www.futpc.com/player/21155/manuel-neuer",
+  "Ronaldo  " => [6000000, "http://www.futpc.com/player/3072/cristiano-ronaldo"],
+  "Messi    " => [4000000, "http://www.futpc.com/player/3071/lionel-messi"],
+  "Robben   " => [ 850000, "http://www.futpc.com/player/3074/arjen-robben"],
+  #"Suarez   " => [      0, "http://www.futpc.com/player/3075/luis-su%C3%A1rez"],
+  #"Neymar   " => [      0, "http://www.futpc.com/player/3091/neymar"],
+  "Modric   " => [  30000, "http://www.futpc.com/player/3083/luka-modric"],
+  "Iniesta  " => [  20000, "http://www.futpc.com/player/3076/iniesta"],
+  "Lahm     " => [  25000, "http://www.futpc.com/player/3088/philipp-lahm"],
+  "Alba     " => [  10000, "http://www.futpc.com/player/3209/jordi-alba"],
+  "Ramos    " => [ 180000, "http://www.futpc.com/player/3086/sergio-ramos"],
+  "Piszczek " => [  10000, "http://www.futpc.com/player/3171/lukasz-piszczek"],
+  "Neuer    " => [ 350000, "http://www.futpc.com/player/21155/manuel-neuer"],
 }
 
-total = [0, 0, 0]
+print "Player         Target price       BIN price      Difference\n"
+print "-----------------------------------------------------------\n"
 
-players.map do |player, link|
-  html = open(link).read
+total = [0, 0, 0, 0]
+
+players.map do |player, price_and_link|
+  html = open(price_and_link[1]).read
   doc = Nokogiri::HTML(html)
 
-  lowest_bin     = doc.xpath('//div[contains(@class, "lowestBin")]//span').first.text.gsub(',', '')
-  snd_lowest_bin = doc.xpath("//td")[0].text.gsub(',', '')
-  trd_lowest_bin = doc.xpath("//td")[2].text.gsub(',', '')
+  case ARGV[0].downcase
+  when "pc"
+    lowest_bin     = doc.xpath('//div[contains(@class, "lowestBin")]//span').first.text.gsub(',', '').to_i
+    snd_lowest_bin = doc.xpath("//td")[0].text.gsub(',', '').to_i
+    trd_lowest_bin = doc.xpath("//td")[2].text.gsub(',', '').to_i
+  when "xbox"
+    lowest_bin     = doc.xpath('//div[contains(@id, "xboxlowest")]').first.text.gsub(',', '').to_i
+    snd_lowest_bin = doc.xpath('//div[contains(@id, "xboxlowest2")]').first.text.gsub(',', '').to_i
+    trd_lowest_bin = doc.xpath('//div[contains(@id, "xboxlowest3")]').first.text.gsub(',', '').to_i
+  when "ps"
+    lowest_bin     = doc.xpath('//div[contains(@id, "pslowest")]').first.text.gsub(',', '').to_i
+    snd_lowest_bin = doc.xpath('//div[contains(@id, "pslowest2")]').first.text.gsub(',', '').to_i
+    trd_lowest_bin = doc.xpath('//div[contains(@id, "pslowest3")]').first.text.gsub(',', '').to_i
+  else
+    raise "Platform '#{ARGV[0]}' unrecognized."
+  end
 
-  total[0] += lowest_bin.to_i
-  total[1] += snd_lowest_bin.to_i
-  total[2] += trd_lowest_bin.to_i
+  total[0] += price_and_link[0]
+  total[1] += lowest_bin
+  total[2] += snd_lowest_bin
+  total[3] += trd_lowest_bin
 
   print "#{player}\t"
+  print commas("% 9d" % price_and_link[0]) + "\t"
   print commas("% 9d" % lowest_bin) + "\t"
-  print commas("% 9d" % snd_lowest_bin) + "\t"
-  print commas("% 9d" % trd_lowest_bin) + "\n"
+  print commas("% 9d" % (price_and_link[0] - lowest_bin)) + "\t"
+  #print commas("% 9d" % snd_lowest_bin) + "\t"
+  #print commas("% 9d" % trd_lowest_bin)
+  print "\n"
 end
-print "\nTotal   \t#{commas("% 9d" % total[0])}\t#{commas("% 9d" % total[1])}\t#{commas("% 9d" % total[2])}"
-print "\nDiff    \t#{commas("% 9d" % (13080000 - total[0]))}\t#{commas("% 9d" % (13080000 - total[1]))}\t#{commas("% 9d" % (13080000 - total[2]))}\n"
+
+print "\nTotal   \t#{commas("% 9d" % total[0])}"
+print "\t#{commas("% 9d" % total[1])}"
+print "\t#{commas("% 9d" % (total[0] - total[2]))}"
+#print "\t#{commas("% 9d" % total[2])}"
+#print "\t#{commas("% 9d" % total[3])}"
+print "\n"
