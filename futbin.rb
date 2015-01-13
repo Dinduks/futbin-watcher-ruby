@@ -3,7 +3,7 @@
 
 require 'nokogiri'
 require 'open-uri'
-require 'growl'
+require 'colored'
 
 def commas(number)
   chunks = []
@@ -14,18 +14,27 @@ def commas(number)
   chunks.join(',').reverse.gsub(/,/, ' ').gsub(/- /, ' -')
 end
 
+def colorize_price(str)
+  if str.include? "-"
+    str.red
+  else
+    str.green
+  end
+end
+
 players = {
   "Ronaldo  " => [6000000, "http://www.futpc.com/player/3072/cristiano-ronaldo"],
-  "Messi    " => [4000000, "http://www.futpc.com/player/3071/lionel-messi"],
+  "Messi    " => [4500000, "http://www.futpc.com/player/3071/lionel-messi"],
   "Robben   " => [ 850000, "http://www.futpc.com/player/3074/arjen-robben"],
   #"Suarez   " => [      0, "http://www.futpc.com/player/3075/luis-su%C3%A1rez"],
   #"Neymar   " => [      0, "http://www.futpc.com/player/3091/neymar"],
-  "Modric   " => [  30000, "http://www.futpc.com/player/3083/luka-modric"],
+  "Modric   " => [  20000, "http://www.futpc.com/player/3083/luka-modric"],
   "Iniesta  " => [  20000, "http://www.futpc.com/player/3076/iniesta"],
-  "Lahm     " => [  25000, "http://www.futpc.com/player/3088/philipp-lahm"],
-  "Alba     " => [  10000, "http://www.futpc.com/player/3209/jordi-alba"],
-  "Ramos    " => [ 180000, "http://www.futpc.com/player/3086/sergio-ramos"],
-  "Piszczek " => [  10000, "http://www.futpc.com/player/3171/lukasz-piszczek"],
+  "Lahm     " => [  20000, "http://www.futpc.com/player/3088/philipp-lahm"],
+  "Alba     " => [   8000, "http://www.futpc.com/player/3209/jordi-alba"],
+  "Ramos    " => [ 170000, "http://www.futpc.com/player/3086/sergio-ramos"],
+  "Boateng  " => [  15000, "http://www.futpc.com/player/3104/j%C3%A9r%C3%B4me-boateng"],
+  #"Piszczek " => [   6900, "http://www.futpc.com/player/3171/lukasz-piszczek"],
   "Neuer    " => [ 350000, "http://www.futpc.com/player/21155/manuel-neuer"],
 }
 
@@ -63,7 +72,7 @@ players.map do |player, price_and_link|
   print "#{player}\t"
   print commas("% 9d" % price_and_link[0]) + "\t"
   print commas("% 9d" % lowest_bin) + "\t"
-  print commas("% 9d" % (price_and_link[0] - lowest_bin)) + "\t"
+  print colorize_price(commas("% 9d" % (price_and_link[0] - lowest_bin))) + "\t"
   #print commas("% 9d" % snd_lowest_bin) + "\t"
   #print commas("% 9d" % trd_lowest_bin)
   print "\n"
@@ -71,7 +80,7 @@ end
 
 print "\nTotal   \t#{commas("% 9d" % total[0])}"
 print "\t#{commas("% 9d" % total[1])}"
-print "\t#{commas("% 9d" % (total[0] - total[2]))}"
+print "\t#{colorize_price(commas("% 9d" % (total[0] - total[1])))}"
 #print "\t#{commas("% 9d" % total[2])}"
 #print "\t#{commas("% 9d" % total[3])}"
 print "\n"
