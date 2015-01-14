@@ -108,5 +108,13 @@ def print_for_cli(players)
      {:price_difference____ => {:formatters => [PriceDifferenceFormatter.new], :width => 222}}
 end
 
-players = get_prices(ARGV[0].downcase, PLAYERS_LIST)
-print_for_cli(players)
+if ARGV[1].nil?
+  players = get_prices(ARGV[0].downcase, PLAYERS_LIST)
+  print_for_cli(players)
+else
+  while true do
+    players = get_prices(ARGV[0].downcase, PLAYERS_LIST)
+    print_for_cli(players)
+    sleep 1
+  end
+end
