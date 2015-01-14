@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 #encoding: UTF-8
 
-require_relative 'players_list'
 require 'nokogiri'
 require 'open-uri'
 require 'colored'
@@ -11,7 +10,7 @@ class Player
   attr_reader :name
   attr_reader :url
   attr_reader :target_price
-  attr_reader :lowest_bin__
+  attr_reader :lowest_bin
   attr_reader :lowest_bin2
   attr_reader :lowest_bin3
 
@@ -19,27 +18,14 @@ class Player
     @name = name
     @url = url
     @target_price = target_price
-    @lowest_bin__ = lowest_bin
+    @lowest_bin = lowest_bin
     @lowest_bin2 = lowest_bin2
     @lowest_bin3 = lowest_bin3
   end
 
-  def price_difference____
-    if @lowest_bin__.nil? then '' else @target_price - @lowest_bin__ end
+  def price_difference
+    if @lowest_bin.nil? then '' else @target_price - @lowest_bin end
   end
-end
-
-def commas(number)
-  chunks = []
-  number.reverse!
-  while number.length > 0
-    chunks << number.slice!(0,3)
-  end
-  chunks.join(',').reverse.gsub(/,/, ' ').gsub(/- /, ' -')
-end
-
-def colorize_price(str)
-  if str.include? '-' then str.red else str.green end
 end
 
 def get_prices(platform, players)
@@ -66,7 +52,7 @@ def get_prices(platform, players)
         snd_lowest_bin_element = doc.xpath('//div[contains(@id, "pslowest2")]').first
         trd_lowest_bin_element = doc.xpath('//div[contains(@id, "pslowest3")]').first
       else
-        raise "Platform '#{ARGV[0]}' unrecognized."
+        raise "Platform '#{platform}' unrecognized."
     end
 
     player_name    = player_name_element.text
@@ -75,46 +61,5 @@ def get_prices(platform, players)
     trd_lowest_bin = trd_lowest_bin_element.text.gsub(',', '').to_i
 
     Player.new(player_name, url, target_price, lowest_bin, snd_lowest_bin, trd_lowest_bin)
-  end
-end
-
-class PriceFormatter
-  def format(value)
-    if value.to_s.empty? then '' else commas('% 9d' % value.to_s) end
-  end
-end
-class PriceDifferenceFormatter
-  def format(value)
-    if value.to_s.empty? then '' else colorize_price(commas('% 9d' % value.to_s)) end
-  end
-end
-
-def print_for_cli(players)
-  total = [0, 0, 0, 0]
-  players.each do |player|
-    total[0] += player.target_price
-    total[1] += player.lowest_bin__
-    total[2] += player.lowest_bin2
-    total[3] += player.lowest_bin3
-  end
-
-  players.push(Player.new('', '', nil, nil, nil, nil))
-  players.push(Player.new('Total', '', total[0], total[1], total[2], total[3]))
-
-  tp players,
-     :name,
-     {:target_price => {:formatters => [PriceFormatter.new], :width => 33}},
-     {:lowest_bin__ => {:formatters => [PriceFormatter.new], :width => 32}},
-     {:price_difference____ => {:formatters => [PriceDifferenceFormatter.new], :width => 222}}
-end
-
-if ARGV[1].nil?
-  players = get_prices(ARGV[0].downcase, PLAYERS_LIST)
-  print_for_cli(players)
-else
-  while true do
-    players = get_prices(ARGV[0].downcase, PLAYERS_LIST)
-    print_for_cli(players)
-    sleep 1
   end
 end
