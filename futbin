@@ -4,83 +4,116 @@
 require 'nokogiri'
 require 'open-uri'
 require 'colored'
+require 'table_print'
+
+class Player
+  attr_reader :name
+  attr_reader :url
+  attr_reader :target_price
+  attr_reader :lowest_bin
+  attr_reader :lowest_bin2
+  attr_reader :lowest_bin3
+
+  def initialize(name, url, target_price, lowest_bin, lowest_bin2, lowest_bin3)
+    @name = name
+    @url = url
+    @target_price = target_price
+    @lowest_bin = lowest_bin
+    @lowest_bin2 = lowest_bin2
+    @lowest_bin3 = lowest_bin3
+  end
+
+  def price_difference
+    if lowest_bin.nil? then '' else @target_price - @lowest_bin end
+  end
+end
 
 def commas(number)
   chunks = []
   number.reverse!
-  while (number.length > 0)
+  while number.length > 0
     chunks << number.slice!(0,3)
   end
   chunks.join(',').reverse.gsub(/,/, ' ').gsub(/- /, ' -')
 end
 
 def colorize_price(str)
-  if str.include? "-"
-    str.red
-  else
-    str.green
+  # if str.include? '-' then str.red else str.green end
+  str
+end
+
+def get_prices(platform, players)
+  players.map do |url, target_price|
+    html = open(url).read
+    doc = Nokogiri::HTML(html)
+
+    case platform
+      when 'pc'
+        player_name_element    = doc.xpath("//td")[4]
+        lowest_bin_element     = doc.xpath('//div[contains(@class, "lowestBin")]//span').first
+        snd_lowest_bin_element = doc.xpath("//td")[0]
+        trd_lowest_bin_element = doc.xpath("//td")[2]
+      when 'xbox'
+        player_name_element    = doc.xpath("//td")[8]
+        lowest_bin_element     = doc.xpath('//div[contains(@id, "xboxlowest")]').first
+        snd_lowest_bin_element = doc.xpath('//div[contains(@id, "xboxlowest2")]').first
+        trd_lowest_bin_element = doc.xpath('//div[contains(@id, "xboxlowest3")]').first
+      when 'ps'
+        player_name_element    = doc.xpath("//td")[8]
+        lowest_bin_element     = doc.xpath('//div[contains(@id, "pslowest")]').first
+        snd_lowest_bin_element = doc.xpath('//div[contains(@id, "pslowest2")]').first
+        trd_lowest_bin_element = doc.xpath('//div[contains(@id, "pslowest3")]').first
+      else
+        raise "Platform '#{ARGV[0]}' unrecognized."
+    end
+
+    player_name    = player_name_element.text
+    lowest_bin     = lowest_bin_element.text.gsub(',', '').to_i
+    snd_lowest_bin = snd_lowest_bin_element.text.gsub(',', '').to_i
+    trd_lowest_bin = trd_lowest_bin_element.text.gsub(',', '').to_i
+
+    Player.new(player_name, url, target_price, lowest_bin, snd_lowest_bin, trd_lowest_bin)
   end
 end
 
-players = {
-  "Ronaldo  " => [6000000, "http://www.futpc.com/player/3072/cristiano-ronaldo"],
-  "Messi    " => [4500000, "http://www.futpc.com/player/3071/lionel-messi"],
-  "Robben   " => [ 850000, "http://www.futpc.com/player/3074/arjen-robben"],
-  #"Suarez   " => [      0, "http://www.futpc.com/player/3075/luis-su%C3%A1rez"],
-  #"Neymar   " => [      0, "http://www.futpc.com/player/3091/neymar"],
-  "Modric   " => [  20000, "http://www.futpc.com/player/3083/luka-modric"],
-  "Iniesta  " => [  20000, "http://www.futpc.com/player/3076/iniesta"],
-  "Lahm     " => [  20000, "http://www.futpc.com/player/3088/philipp-lahm"],
-  "Alba     " => [   8000, "http://www.futpc.com/player/3209/jordi-alba"],
-  "Ramos    " => [ 170000, "http://www.futpc.com/player/3086/sergio-ramos"],
-  "Boateng  " => [  15000, "http://www.futpc.com/player/3104/j%C3%A9r%C3%B4me-boateng"],
-  #"Piszczek " => [   6900, "http://www.futpc.com/player/3171/lukasz-piszczek"],
-  "Neuer    " => [ 350000, "http://www.futpc.com/player/21155/manuel-neuer"],
+class PriceFormatter
+  def format(value)
+    if value.to_s.empty? then '' else commas('% 9d' % value.to_s) end
+  end
+end
+
+def print_for_cli(players)
+  total = [0, 0, 0, 0]
+
+  players.each do |player|
+    total[0] += player.target_price
+    total[1] += player.lowest_bin
+    total[2] += player.lowest_bin2
+    total[3] += player.lowest_bin3
+  end
+
+  players.push(Player.new("", "", nil, nil, nil, nil))
+  players.push(Player.new("Total", "", total[0], total[1], total[2], total[3],))
+
+  tp players,
+     :name,
+     {:target_price => {:formatters => [PriceFormatter.new]}},
+     {:lowest_bin => {:formatters => [PriceFormatter.new], :width => 20}},
+     {:price_difference => {:formatters => [PriceFormatter.new]}}
+end
+
+players_list = {
+    'http://www.futpc.com/player/3072/cristiano-ronaldo' => 6000000,
+    'http://www.futpc.com/player/3071/lionel-messi' => 4400000,
+    'http://www.futpc.com/player/3074/arjen-robben' => 850000,
+    'http://www.futpc.com/player/3083/luka-modric' => 20000,
+    'http://www.futpc.com/player/3076/iniesta' => 20000,
+    "http://www.futpc.com/player/3088/philipp-lahm" => 20000,
+    'http://www.futpc.com/player/3209/jordi-alba' => 8000,
+    'http://www.futpc.com/player/3086/sergio-ramos' => 170000,
+    'http://www.futpc.com/player/3104/j%C3%A9r%C3%B4me-boateng' => 10000,
+    'http://www.futpc.com/player/21155/manuel-neuer' => 350000,
 }
 
-print "Player         Target price       BIN price      Difference\n"
-print "-----------------------------------------------------------\n"
-
-total = [0, 0, 0, 0]
-
-players.map do |player, price_and_link|
-  html = open(price_and_link[1]).read
-  doc = Nokogiri::HTML(html)
-
-  case ARGV[0].downcase
-  when "pc"
-    lowest_bin     = doc.xpath('//div[contains(@class, "lowestBin")]//span').first.text.gsub(',', '').to_i
-    snd_lowest_bin = doc.xpath("//td")[0].text.gsub(',', '').to_i
-    trd_lowest_bin = doc.xpath("//td")[2].text.gsub(',', '').to_i
-  when "xbox"
-    lowest_bin     = doc.xpath('//div[contains(@id, "xboxlowest")]').first.text.gsub(',', '').to_i
-    snd_lowest_bin = doc.xpath('//div[contains(@id, "xboxlowest2")]').first.text.gsub(',', '').to_i
-    trd_lowest_bin = doc.xpath('//div[contains(@id, "xboxlowest3")]').first.text.gsub(',', '').to_i
-  when "ps"
-    lowest_bin     = doc.xpath('//div[contains(@id, "pslowest")]').first.text.gsub(',', '').to_i
-    snd_lowest_bin = doc.xpath('//div[contains(@id, "pslowest2")]').first.text.gsub(',', '').to_i
-    trd_lowest_bin = doc.xpath('//div[contains(@id, "pslowest3")]').first.text.gsub(',', '').to_i
-  else
-    raise "Platform '#{ARGV[0]}' unrecognized."
-  end
-
-  total[0] += price_and_link[0]
-  total[1] += lowest_bin
-  total[2] += snd_lowest_bin
-  total[3] += trd_lowest_bin
-
-  print "#{player}\t"
-  print commas("% 9d" % price_and_link[0]) + "\t"
-  print commas("% 9d" % lowest_bin) + "\t"
-  print colorize_price(commas("% 9d" % (price_and_link[0] - lowest_bin))) + "\t"
-  #print commas("% 9d" % snd_lowest_bin) + "\t"
-  #print commas("% 9d" % trd_lowest_bin)
-  print "\n"
-end
-
-print "\nTotal   \t#{commas("% 9d" % total[0])}"
-print "\t#{commas("% 9d" % total[1])}"
-print "\t#{colorize_price(commas("% 9d" % (total[0] - total[1])))}"
-#print "\t#{commas("% 9d" % total[2])}"
-#print "\t#{commas("% 9d" % total[3])}"
-print "\n"
+players = get_prices(ARGV[0].downcase, players_list)
+print_for_cli(players)
