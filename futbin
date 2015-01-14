@@ -10,7 +10,7 @@ class Player
   attr_reader :name
   attr_reader :url
   attr_reader :target_price
-  attr_reader :lowest_bin
+  attr_reader :lowest_bin__
   attr_reader :lowest_bin2
   attr_reader :lowest_bin3
 
@@ -18,13 +18,13 @@ class Player
     @name = name
     @url = url
     @target_price = target_price
-    @lowest_bin = lowest_bin
+    @lowest_bin__ = lowest_bin
     @lowest_bin2 = lowest_bin2
     @lowest_bin3 = lowest_bin3
   end
 
   def price_difference
-    if lowest_bin.nil? then '' else @target_price - @lowest_bin end
+    if @lowest_bin__.nil? then '' else @target_price - @lowest_bin__ end
   end
 end
 
@@ -43,8 +43,10 @@ def colorize_price(str)
 end
 
 def get_prices(platform, players)
+  website = if platform == 'pc' then 'futpc.com' else 'futbin.com' end
+
   players.map do |url, target_price|
-    html = open(url).read
+    html = open('http://' + website + url).read
     doc = Nokogiri::HTML(html)
 
     case platform
@@ -84,35 +86,34 @@ end
 
 def print_for_cli(players)
   total = [0, 0, 0, 0]
-
   players.each do |player|
     total[0] += player.target_price
-    total[1] += player.lowest_bin
+    total[1] += player.lowest_bin__
     total[2] += player.lowest_bin2
     total[3] += player.lowest_bin3
   end
 
-  players.push(Player.new("", "", nil, nil, nil, nil))
-  players.push(Player.new("Total", "", total[0], total[1], total[2], total[3],))
+  players.push(Player.new('', '', nil, nil, nil, nil))
+  players.push(Player.new('Total', '', total[0], total[1], total[2], total[3]))
 
   tp players,
      :name,
-     {:target_price => {:formatters => [PriceFormatter.new]}},
-     {:lowest_bin => {:formatters => [PriceFormatter.new], :width => 20}},
+     {:target_price => {:formatters => [PriceFormatter.new], :width => 33}},
+     {:lowest_bin__ => {:formatters => [PriceFormatter.new], :width => 32}},
      {:price_difference => {:formatters => [PriceFormatter.new]}}
 end
 
 players_list = {
-    'http://www.futpc.com/player/3072/cristiano-ronaldo' => 6000000,
-    'http://www.futpc.com/player/3071/lionel-messi' => 4400000,
-    'http://www.futpc.com/player/3074/arjen-robben' => 850000,
-    'http://www.futpc.com/player/3083/luka-modric' => 20000,
-    'http://www.futpc.com/player/3076/iniesta' => 20000,
-    "http://www.futpc.com/player/3088/philipp-lahm" => 20000,
-    'http://www.futpc.com/player/3209/jordi-alba' => 8000,
-    'http://www.futpc.com/player/3086/sergio-ramos' => 170000,
-    'http://www.futpc.com/player/3104/j%C3%A9r%C3%B4me-boateng' => 10000,
-    'http://www.futpc.com/player/21155/manuel-neuer' => 350000,
+    '/player/3072/cristiano-ronaldo' => 6000000,
+    '/player/3071/lionel-messi' => 4400000,
+    '/player/3074/arjen-robben' => 850000,
+    '/player/3083/luka-modric' => 20000,
+    '/player/3076/iniesta' => 20000,
+    "/player/3088/philipp-lahm" => 20000,
+    '/player/3209/jordi-alba' => 8000,
+    '/player/3086/sergio-ramos' => 170000,
+    '/player/3104/j%C3%A9r%C3%B4me-boateng' => 10000,
+    '/player/21155/manuel-neuer' => 350000,
 }
 
 players = get_prices(ARGV[0].downcase, players_list)
