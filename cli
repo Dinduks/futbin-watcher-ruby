@@ -54,6 +54,6 @@ else
   while true do
     players = get_prices(ARGV[0].downcase, PLAYERS_LIST)
     print_for_cli(players)
-    sleep 1
+    sleep ARGV[1].to_i
   end
 end
